@@ -6,6 +6,7 @@ export const getAxiosClient = (apiKey: string, options: AxiosClientOptions | nul
     baseURL: options?.baseUrl || "https://api.minepi.com",
     timeout: 20000,
     headers: { Authorization: `Key ${apiKey}`, "Content-Type": "application/json" },
+    adapter: options?.adapter
   });
 
   return axiosClient;
