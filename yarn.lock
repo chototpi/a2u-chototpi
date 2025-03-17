@@ -2,6 +2,11 @@
 # yarn lockfile v1
 
 
+"@haverstack/axios-fetch-adapter@^0.12.0":
+  version "0.12.0"
+  resolved "https://registry.yarnpkg.com/@haverstack/axios-fetch-adapter/-/axios-fetch-adapter-0.12.0.tgz#a3cf27451123d4f772d638a251f1c24e9a13486d"
+  integrity sha512-+9WzqzeIvEC6Qrs6ImSqaX5P+eCrWbhzR+GoB7+p8/yqxmq59CPEo0uFuu0wINU9DQuJMzyER9WYdpYVwZV9rw==
+
 "@types/eventsource@^1.1.2":
   version "1.1.10"
   resolved "https://registry.yarnpkg.com/@types/eventsource/-/eventsource-1.1.10.tgz#e085be22c913e893f83f5ace21e9c10f87cbf6d2"
@@ -23,6 +28,11 @@
   version "1.19.19"
   resolved "https://registry.yarnpkg.com/@types/urijs/-/urijs-1.19.19.tgz#2789369799907fc11e2bc6e3a00f6478c2281b95"
   integrity sha512-FDJNkyhmKLw7uEvTxx5tSXfPeQpO0iy73Ry+PmYZJvQy0QIWX8a7kJ4kLWRf+EbTPJEPDSgPXHaM7pzr5lmvCg==
+
+"@vespaiach/axios-fetch-adapter@^0.3.1":
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/@vespaiach/axios-fetch-adapter/-/axios-fetch-adapter-0.3.1.tgz#b0c08167bec9cc558f578a1b9ccff52ead1cf1cb"
+  integrity sha512-+1F52VWXmQHSRFSv4/H0wtnxfvjRMPK5531e880MIjypPdUSX6QZuoDgEVeCE1vjhzDdxCVX7rOqkub7StEUwQ==
 
 asynckit@^0.4.0:
   version "0.4.0"
@@ -208,15 +218,15 @@ stellar-base@^8.2.2:
   optionalDependencies:
     sodium-native "^3.3.0"
 
-stellar-sdk@^10.4.1:
+"stellar-sdk@git+https://github.com/tanoielis/js-stellar-sdk.git":
   version "10.4.1"
-  resolved "https://registry.yarnpkg.com/stellar-sdk/-/stellar-sdk-10.4.1.tgz#823eb20e7f346b87c3bcaeeb11ec8128a1790d90"
-  integrity sha512-Wdm2UoLuN9SNrSEHO0R/I+iZuRwUkfny1xg4akhGCpO8LQZw8QzuMTJvbEoMT3sHT4/eWYiteVLp7ND21xZf5A==
+  resolved "git+https://github.com/tanoielis/js-stellar-sdk.git#deeff526c640fcb41fe41e599355be48b90951be"
   dependencies:
     "@types/eventsource" "^1.1.2"
     "@types/node" ">= 8"
     "@types/randombytes" "^2.0.0"
     "@types/urijs" "^1.19.6"
+    "@vespaiach/axios-fetch-adapter" "^0.3.1"
     axios "0.25.0"
     bignumber.js "^4.0.0"
     detect-node "^2.0.4"

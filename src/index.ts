@@ -108,7 +108,7 @@ export default class PiNetwork {
   private getHorizonClient = (network: NetworkPassphrase): StellarSdk.Server => {
     this.NETWORK_PASSPHRASE = network;
     const serverUrl = network === "Pi Network" ? "https://api.mainnet.minepi.com" : "https://api.testnet.minepi.com";
-    return new StellarSdk.Server(serverUrl);
+    return new StellarSdk.Server(serverUrl);;
   };
 
   private buildA2UTransaction = async (
