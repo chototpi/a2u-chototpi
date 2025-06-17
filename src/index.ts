@@ -1,152 +1,100 @@
-import { Server, Keypair, Asset, Operation, TransactionBuilder, Memo } from "@stellar/stellar-sdk";
-import { AxiosClientOptions, NetworkPassphrase, PaymentArgs, PaymentDTO, TransactionData } from "./types";
-import { getAxiosClient } from "./utils";
+import dotenv from "dotenv";
+import { Keypair, Server, TransactionBuilder, Operation, Asset, Memo, Networks } from "@stellar/stellar-sdk";
+import axios from "axios";
 
-export default class PiNetwork {
-  private API_KEY: string;
-  private myKeypair: StellarSdk.Keypair;
-  private NETWORK_PASSPHRASE: NetworkPassphrase;
-  private currentPayment: PaymentDTO | null;
-  private axiosOptions: AxiosClientOptions | null;
+dotenv.config();
 
-  constructor(apiKey: string, walletPrivateSeed: string, options: AxiosClientOptions | null = null) {
-    this.validateSeedFormat(walletPrivateSeed);
-    this.API_KEY = apiKey;
-    this.myKeypair = StellarSdk.Keypair.fromSecret(walletPrivateSeed);
-    this.axiosOptions = options;
+const server = new Server("https://api.testnet.minepi.com");
+
+const PI_API_KEY = process.env.PI_API_KEY!;
+const APP_PUBLIC_KEY = process.env.APP_PUBLIC_KEY!;
+const APP_PRIVATE_KEY = process.env.APP_PRIVATE_KEY!;
+
+// Test API route with Express
+import express from "express";
+const app = express();
+app.use(express.json());
+
+app.get("/ping", (_, res) => {
+  res.send("✅ Pi A2U backend is alive!");
+});
+
+app.post("/a2u-test", async (req, res) => {
+  const { uid, amount } = req.body;
+  const memo = "A2U-test-001";
+
+  if (!uid || !amount) {
+    return res.status(400).json({ success: false, message: "Thiếu uid hoặc amount" });
   }
 
-  public createPayment = async (paymentData: PaymentArgs): Promise<string> => {
-    this.validatePaymentData(paymentData);
+  console.log("🔍 A2U REQUEST:");
+  console.log("📌 UID:", uid);
+  console.log("📌 AMOUNT:", amount);
+  console.log("📌 MEMO:", memo);
 
-    const axiosClient = getAxiosClient(this.API_KEY, this.axiosOptions);
-    const body = { payment: paymentData };
-    const response = await axiosClient.post(`/v2/payments`, body);
-    this.currentPayment = response.data;
-
-    return response.data.identifier;
-  };
-
-  public submitPayment = async (paymentId: string): Promise<string> => {
-    try {
-      if (!this.currentPayment || this.currentPayment.identifier != paymentId) {
-        this.currentPayment = await this.getPayment(paymentId);
-        const txid = this.currentPayment?.transaction?.txid;
-        if (txid) {
-          const errorObject = { message: "This payment already has a linked txid", paymentId, txid };
-          throw new Error(JSON.stringify(errorObject));
-        }
-      }
-
-      const {
-        amount,
-        identifier: paymentIdentifier,
-        from_address: fromAddress,
-        to_address: toAddress,
-      } = this.currentPayment;
-
-      const piHorizon = this.getHorizonClient(this.currentPayment.network);
-      const transactionData = {
-        amount,
-        paymentIdentifier,
-        fromAddress,
-        toAddress,
-      };
-
-      const transaction = await this.buildA2UTransaction(piHorizon, transactionData);
-      const txid = await this.submitTransaction(piHorizon, transaction);
-      return txid;
-    } finally {
-      this.currentPayment = null;
+  const axiosClient = axios.create({
+    baseURL: "https://api.testnet.minepi.com",
+    timeout: 15000,
+    headers: {
+      Authorization: `Key ${PI_API_KEY}`,
+      "Content-Type": "application/json"
     }
-  };
+  });
 
-  public completePayment = async (paymentId: string, txid: string): Promise<PaymentDTO> => {
-    try {
-      const axiosClient = getAxiosClient(this.API_KEY, this.axiosOptions);
-      const response = await axiosClient.post(`/v2/payments/${paymentId}/complete`, { txid });
-      return response.data;
-    } finally {
-      this.currentPayment = null;
-    }
-  };
-
-  public getPayment = async (paymentId: string): Promise<PaymentDTO> => {
-    const axiosClient = getAxiosClient(this.API_KEY, this.axiosOptions);
-    const response = await axiosClient.get(`/v2/payments/${paymentId}`);
-    return response.data;
-  };
-
-  public cancelPayment = async (paymentId: string): Promise<PaymentDTO> => {
-    try {
-      const axiosClient = getAxiosClient(this.API_KEY, this.axiosOptions);
-      const response = await axiosClient.post(`/v2/payments/${paymentId}/cancel`);
-      return response.data;
-    } finally {
-      this.currentPayment = null;
-    }
-  };
-
-  public getIncompleteServerPayments = async (): Promise<Array<PaymentDTO>> => {
-    const axiosClient = getAxiosClient(this.API_KEY, this.axiosOptions);
-    const response = await axiosClient.get("/v2/payments/incomplete_server_payments");
-    return response.data;
-  };
-
-  private validateSeedFormat = (seed: string): void => {
-    if (!seed.startsWith("S")) throw new Error("Wallet private seed must starts with 'S'");
-    if (seed.length !== 56) throw new Error("Wallet private seed must be 56-character long");
-  };
-
-  private validatePaymentData = (paymentData: PaymentArgs): void => {
-    if (!paymentData.amount) throw new Error("Missing amount");
-    if (!paymentData.memo) throw new Error("Missing memo");
-    if (!paymentData.metadata) throw new Error("Missing metadata");
-    if (!paymentData.uid) throw new Error("Missing uid");
-  };
-
-  private getHorizonClient = (network: NetworkPassphrase): StellarSdk.Server => {
-    this.NETWORK_PASSPHRASE = network;
-    const serverUrl = network === "Pi Network" ? "https://api.mainnet.minepi.com" : "https://api.testnet.minepi.com";
-    return new StellarSdk.Server(serverUrl);;
-  };
-
-  private buildA2UTransaction = async (
-    piHorizon: StellarSdk.Server,
-    transactionData: TransactionData
-  ): Promise<StellarSdk.Transaction> => {
-    if (transactionData.fromAddress !== this.myKeypair.publicKey()) {
-      throw new Error("You should use a private seed of your app wallet!");
-    }
-
-    const myAccount = await piHorizon.loadAccount(this.myKeypair.publicKey());
-    const baseFee = await piHorizon.fetchBaseFee();
-
-    const paymentOperation = StellarSdk.Operation.payment({
-      destination: transactionData.toAddress,
-      asset: StellarSdk.Asset.native(),
-      amount: transactionData.amount.toString(),
+  try {
+    const paymentRes = await axiosClient.post("/v2/payments", {
+      amount,
+      memo,
+      metadata: { note: "A2U payment from app" },
+      uid
     });
 
-    const transaction = new StellarSdk.TransactionBuilder(myAccount, {
+    const paymentIdentifier = paymentRes.data.identifier;
+    const recipientAddress = paymentRes.data.recipient;
+
+    if (!paymentIdentifier || !recipientAddress) {
+      return res.status(500).json({ success: false, message: "Thiếu thông tin từ Pi API" });
+    }
+
+    const sourceAccount = await server.loadAccount(APP_PUBLIC_KEY);
+    const baseFee = await server.fetchBaseFee();
+    const timebounds = await server.fetchTimebounds(180);
+
+    const operation = Operation.payment({
+      destination: recipientAddress,
+      asset: Asset.native(),
+      amount: amount.toString()
+    });
+
+    const tx = new TransactionBuilder(sourceAccount, {
       fee: baseFee.toString(),
-      networkPassphrase: this.NETWORK_PASSPHRASE,
-      timebounds: await piHorizon.fetchTimebounds(180),
+      networkPassphrase: "Pi Testnet",
+      timebounds
     })
-      .addOperation(paymentOperation)
-      .addMemo(StellarSdk.Memo.text(transactionData.paymentIdentifier))
+      .addOperation(operation)
+      .addMemo(Memo.text(memo))
       .build();
 
-    transaction.sign(this.myKeypair);
-    return transaction;
-  };
+    const keypair = Keypair.fromSecret(APP_PRIVATE_KEY);
+    tx.sign(keypair);
 
-  private submitTransaction = async (
-    piHorizon: StellarSdk.Server,
-    transaction: StellarSdk.Transaction
-  ): Promise<string> => {
-    const txResponse = await piHorizon.submitTransaction(transaction);
-    // @ts-ignore
-    return txResponse.id;
-  };
-}
+    const txResult = await server.submitTransaction(tx);
+    const txid = txResult.id;
+
+    await axiosClient.post(`/v2/payments/${paymentIdentifier}/complete`, { txid });
+
+    return res.json({ success: true, txid });
+  } catch (error: any) {
+    console.error("❌ Lỗi xử lý A2U:", error.response?.data || error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi xử lý A2U",
+      error: error.response?.data || error.message
+    });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Pi A2U backend running on port ${PORT}`);
+});
