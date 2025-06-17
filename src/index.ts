@@ -4,7 +4,7 @@ import axios from "axios";
 
 dotenv.config();
 
-const server = new Server("https://api.testnet.minepi.com");
+const server = new StellarSdk.Server("https://api.testnet.minepi.com");
 
 const PI_API_KEY = process.env.PI_API_KEY!;
 const APP_PUBLIC_KEY = process.env.APP_PUBLIC_KEY!;
