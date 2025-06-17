@@ -1,6 +1,7 @@
 {
   "name": "pi-backend",
   "version": "0.1.3",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -10,24 +11,41 @@
       "default": "./dist/index.js"
     }
   },
+  "repository": "https://github.com/chototpi/a2u-chototpi",
+  "homepage": "https://github.com/chototpi/a2u-chototpi",
+  "author": "Pi Core Team",
+  "license": "PiOS",
   "scripts": {
     "build": "yarn build:types && yarn build:js",
     "build:js": "PI_ENV=production tsx esbuild.ts",
     "build:types": "tsc --outDir dist",
-    "start": "node dist/index.js"
+    "dev": "concurrently \"yarn dev:types\" \"yarn dev:js\"",
+    "dev:js": "PI_ENV=development tsx esbuild.ts --watch",
+    "dev:types": "tsc --outDir dist --watch",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@stellar/stellar-sdk": "^13.2.0",
+    "@stellar/stellar-sdk": "^13.3.0",
     "axios": "^1.8.4",
     "dotenv": "^16.5.0"
   },
   "devDependencies": {
-    "tsx": "^4.19.3",
-    "typescript": "^5.8.3",
+    "@types/node": "^18.18.11",
+    "@typescript-eslint/eslint-plugin": "^8.30.1",
+    "@typescript-eslint/parser": "^8.30.1",
+    "concurrently": "^9.1.2",
     "esbuild": "^0.25.2",
-    "@types/node": "16"
+    "eslint": "^9.24.0",
+    "eslint-config-prettier": "^10.1.2",
+    "eslint-plugin-prettier": "^5.2.6",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.3",
+    "typescript": "^5.4.3"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   }
 }
