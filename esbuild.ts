@@ -14,8 +14,8 @@ const buildOptions: esbuild.BuildOptions = {
   define: {
     "process.env.PI_ENV": `"${process.env.PI_ENV || "development"}"`,
   },
-  external: ["stellar-sdk", "axios", "dotenv"],
-  legalComments: "linked" as const,
+  external: ["@stellar/stellar-sdk", "axios", "dotenv"],
+  legalComments: "linked",
 };
 
 async function build() {
