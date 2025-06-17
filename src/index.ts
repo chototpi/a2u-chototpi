@@ -1,25 +1,32 @@
+import express from "express";
 import dotenv from "dotenv";
-import * as StellarSdk from "@stellar/stellar-sdk";
+import { Server, Keypair, Asset, Operation, TransactionBuilder, Memo } from "@stellar/stellar-sdk";
 import axios from "axios";
 
 dotenv.config();
-
-const server = new StellarSdk.Server("https://api.testnet.minepi.com");
+const app = express();
+app.use(express.json());
 
 const PI_API_KEY = process.env.PI_API_KEY!;
 const APP_PUBLIC_KEY = process.env.APP_PUBLIC_KEY!;
 const APP_PRIVATE_KEY = process.env.APP_PRIVATE_KEY!;
+const BASE_URL = "https://api.testnet.minepi.com";
 
-// Test API route with Express
-import express from "express";
-const app = express();
-app.use(express.json());
+const server = new Server(BASE_URL);
 
-app.get("/ping", (_, res) => {
-  res.send("✅ Pi A2U backend is alive!");
+const axiosClient = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    Authorization: `Key ${PI_API_KEY}`,
+    "Content-Type": "application/json",
+  },
 });
 
-app.post("/a2u-test", async (req, res) => {
+app.get("/", (_, res) => {
+  res.send("✅ Pi A2U backend is running.");
+});
+
+app.post("/api/a2u-test", async (req, res) => {
   const { uid, amount } = req.body;
   const memo = "A2U-test-001";
 
@@ -31,47 +38,40 @@ app.post("/a2u-test", async (req, res) => {
   console.log("📌 UID:", uid);
   console.log("📌 AMOUNT:", amount);
   console.log("📌 MEMO:", memo);
-
-  const axiosClient = axios.create({
-    baseURL: "https://api.testnet.minepi.com",
-    timeout: 15000,
-    headers: {
-      Authorization: `Key ${PI_API_KEY}`,
-      "Content-Type": "application/json"
-    }
-  });
+  console.log("📌 PI_API_KEY starts with:", PI_API_KEY.slice(0, 6));
 
   try {
-    const paymentRes = await axiosClient.post("/v2/payments", {
+    const body = {
+      uid,
       amount,
       memo,
-      metadata: { note: "A2U payment from app" },
-      uid
-    });
+      metadata: { note: "test" },
+    };
 
-    const paymentIdentifier = paymentRes.data.identifier;
-    const recipientAddress = paymentRes.data.recipient;
+    console.log("📤 Sending to Pi API /v2/payments ...");
+    const createRes = await axiosClient.post("/v2/payments", body);
+
+    const paymentIdentifier = createRes.data.identifier;
+    const recipientAddress = createRes.data.recipient;
 
     if (!paymentIdentifier || !recipientAddress) {
-      return res.status(500).json({ success: false, message: "Thiếu thông tin từ Pi API" });
+      return res.status(500).json({ success: false, message: "Không có identifier hoặc recipient" });
     }
 
     const sourceAccount = await server.loadAccount(APP_PUBLIC_KEY);
     const baseFee = await server.fetchBaseFee();
     const timebounds = await server.fetchTimebounds(180);
 
-    const operation = Operation.payment({
-      destination: recipientAddress,
-      asset: Asset.native(),
-      amount: amount.toString()
-    });
-
     const tx = new TransactionBuilder(sourceAccount, {
       fee: baseFee.toString(),
       networkPassphrase: "Pi Testnet",
-      timebounds
+      timebounds,
     })
-      .addOperation(operation)
+      .addOperation(Operation.payment({
+        destination: recipientAddress,
+        asset: Asset.native(),
+        amount: amount.toString(),
+      }))
       .addMemo(Memo.text(memo))
       .build();
 
@@ -89,12 +89,11 @@ app.post("/a2u-test", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Lỗi khi xử lý A2U",
-      error: error.response?.data || error.message
+      error: error.response?.data || error.message,
     });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Pi A2U backend running on port ${PORT}`);
+app.listen(3000, () => {
+  console.log("🚀 Pi A2U backend đang chạy tại cổng 3000");
 });
