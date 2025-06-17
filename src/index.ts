@@ -1,4 +1,4 @@
-import * as StellarSdk from "stellar-sdk";
+import { Server, Keypair, Asset, Operation, TransactionBuilder, Memo } from "@stellar/stellar-sdk";
 import { AxiosClientOptions, NetworkPassphrase, PaymentArgs, PaymentDTO, TransactionData } from "./types";
 import { getAxiosClient } from "./utils";
 
