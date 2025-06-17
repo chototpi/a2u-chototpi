@@ -14,7 +14,7 @@ const buildOptions: esbuild.BuildOptions = {
   define: {
     "process.env.PI_ENV": `"${process.env.PI_ENV || "development"}"`,
   },
-  external: ["axios", "dotenv"],
+  external: ["@stellar/stellar-sdk", "axios", "dotenv"],
   legalComments: "linked",
 };
 
