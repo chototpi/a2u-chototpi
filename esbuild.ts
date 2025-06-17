@@ -14,8 +14,12 @@ const buildOptions: esbuild.BuildOptions = {
   define: {
     "process.env.PI_ENV": `"${process.env.PI_ENV || "development"}"`,
   },
-  external: ["@stellar/stellar-sdk", "axios", "dotenv"],
-  legalComments: "linked",
+  external: [
+    "@stellar/stellar-sdk", // ✅ Sửa đúng tên package
+    "axios",
+    "dotenv"
+  ],
+  legalComments: "linked" as const,
 };
 
 async function build() {
@@ -23,9 +27,10 @@ async function build() {
     if (process.argv.includes("--watch")) {
       const ctx = await esbuild.context(buildOptions);
       await ctx.watch();
-      console.log("Watching for file changes...");
+      console.log("🔄 Watching for file changes...");
     } else {
       await esbuild.build(buildOptions);
+      console.log("✅ Build complete");
     }
 
     const distDir = path.join(process.cwd(), "dist");
@@ -35,7 +40,7 @@ async function build() {
       fs.renameSync(legalFile, newLegalFile);
     }
   } catch (error) {
-    console.error("Build failed:", error);
+    console.error("❌ Build failed:", error);
     process.exit(1);
   }
 }
