@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { Keypair, Server, TransactionBuilder, Operation, Asset, Memo, Networks } from "@stellar/stellar-sdk";
+import * as StellarSdk from "@stellar/stellar-sdk";
 import axios from "axios";
 
 dotenv.config();
